@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ShoppingBag, Trash2, Minus, Plus } from 'lucide-react';
 import Button from '../../components/common/Button';
 import { formatPrice } from '../../utils/helpers';
 import { useNavigate } from 'react-router-dom';
+import { useCart } from '../../context/CartContext';
 
-export default function CartPage({ cart, updateQty, removeFromCart }) {
+export default function CartPage() {
+  const { cart, updateQty, removeFromCart } = useCart();
   const navigate = useNavigate();
   
-  const subtotal = cart.reduce((sum, item) => sum + (item.price_cents * item.qty), 0);
+  // Safety check in case cart is undefined
+  const currentCart = cart || [];
+  
+  const subtotal = currentCart.reduce((sum, item) => sum + (item.price_cents * item.qty), 0);
   const tax = subtotal * 0.1; // Pajak 10%
   const total = subtotal + tax;
 
@@ -22,7 +27,7 @@ export default function CartPage({ cart, updateQty, removeFromCart }) {
           <ShoppingBag /> Keranjang Belanja
         </h1>
         
-        {cart.length === 0 ? (
+        {currentCart.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShoppingBag size={32} className="text-gray-400" />
@@ -33,7 +38,7 @@ export default function CartPage({ cart, updateQty, removeFromCart }) {
         ) : (
           <div className="flex flex-col gap-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              {cart.map((item, idx) => (
+              {currentCart.map((item, idx) => (
                 <div key={item.id} className={`p-4 md:p-6 flex gap-4 items-center ${idx !== 0 ? 'border-t border-gray-100' : ''}`}>
                   <img src={item.image} className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover bg-gray-100" alt={item.name} />
                   <div className="flex-1">
