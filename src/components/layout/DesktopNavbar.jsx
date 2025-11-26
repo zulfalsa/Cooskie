@@ -4,7 +4,7 @@ import { ShoppingBag, Search, Heart, Info } from 'lucide-react';
 import { useCart } from '../../context/CartContext'; 
 
 // Pastikan path ini sesuai dengan lokasi file gambar Anda
-import logoImage from '../../assets/logo.png'; 
+import logoImage from '../../assets/logo-dark.png'; 
 
 export default function DesktopNavbar() {
   const { cartCount } = useCart();

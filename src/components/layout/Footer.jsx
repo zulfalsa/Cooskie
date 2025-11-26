@@ -9,6 +9,8 @@ import {
   Lock 
 } from 'lucide-react';
 
+import logoImage from '../../assets/logo-light.png'; 
+
 const Footer = () => {
   return (
     // Class 'mt-auto' penting agar footer selalu di bawah jika konten sedikit
@@ -19,10 +21,13 @@ const Footer = () => {
           
           {/* Kolom 1: Brand & Social */}
           <div className="col-span-1 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#1e3a8a] font-serif font-bold text-lg">C</div>
-              <span className="font-serif text-2xl font-bold tracking-wide">Cooskie</span>
-            </div>
+            <Link to="/" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+              <img 
+                src={logoImage} 
+                alt="Cooskie Logo" 
+                className="h-10 w-auto mb-3 object-contain" 
+              />
+            </Link>
             <p className="text-blue-100 text-sm leading-relaxed mb-6">
               Menyajikan kehangatan dalam setiap gigitan. Cookies dan dessert premium buatan tangan dengan bahan terbaik.
             </p>
