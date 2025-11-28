@@ -40,12 +40,24 @@ export default function ProductManager() {
         imageUrl = await uploadImage(file, 'products');
       }
 
+      // --- PERBAIKAN: Generate Slug Otomatis ---
+      // Mengubah "Kue Cokelat Enak" menjadi "kue-cokelat-enak"
+      const generatedSlug = form.name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Hapus karakter selain huruf, angka, spasi, strip
+        .replace(/[\s_-]+/g, '-') // Ganti spasi atau underscore dengan strip
+        .replace(/^-+|-+$/g, ''); // Hapus strip di awal atau akhir
+
       await upsertProduct({ 
         ...form, 
+        // Jika form.slug ada (misal dari edit), pakai itu. Jika tidak, pakai yang digenerate.
+        slug: form.slug || generatedSlug, 
         image: imageUrl, 
         price_cents: parseInt(form.price_cents),
         stock: parseInt(form.stock || 0)
       });
+      // -----------------------------------------
       
       setIsModalOpen(false);
       setForm({});
