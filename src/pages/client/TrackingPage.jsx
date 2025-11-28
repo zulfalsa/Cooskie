@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { Package, CheckCircle, Upload, Search, ChevronLeft } from 'lucide-react';
-import Button from '../../components/common/Button';
-import { getOrderByTracking, uploadPaymentProof } from '../../services/orderService';
-import { formatPrice, getStatusColor, getStatusLabel } from '../../utils/helpers';
+import { Package, CheckCircle, Upload, Search, ChevronLeft, AlertCircle } from 'lucide-react';
+import Button from '../../components/common/Button.jsx';
+import { getOrderByTracking, uploadPaymentProof } from '../../services/orderService.js';
+import { formatPrice, getStatusColor, getStatusLabel } from '../../utils/helpers.js';
 
 export default function TrackingPage() {
   const { code } = useParams();
@@ -62,7 +62,7 @@ export default function TrackingPage() {
     }
   };
 
-  // --- TAMPILAN 1: SUKSES CHECKOUT (Gaya TrackingSuccessPage) ---
+  // --- TAMPILAN 1: SUKSES CHECKOUT ---
   if (isSuccess && order) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-gray-50">
@@ -85,7 +85,6 @@ export default function TrackingPage() {
           </div>
 
           <div className="space-y-3">
-            {/* Tombol ini akan mereload halaman tanpa state 'success' untuk melihat detail tracking */}
             <Button onClick={() => navigate(`/tracking/${trackCode}`, { replace: true })} className="w-full">
               Lihat Detail Pesanan
             </Button>
@@ -98,15 +97,13 @@ export default function TrackingPage() {
     );
   }
 
-  // --- TAMPILAN 2: FORM TRACKING & DETAIL (Gaya TrackingPage) ---
+  // --- TAMPILAN 2: FORM TRACKING & DETAIL ---
   return (
     <div className="min-h-screen bg-gray-50 pb-12 pt-8 px-4">
       <div className="max-w-lg mx-auto">
         
-        {/* Header Judul */}
         <h1 className="text-2xl font-bold text-[#1e3a8a] mb-6 text-center">Lacak Pesanan</h1>
 
-        {/* Kotak Pencarian (Identik dengan Cooskie.jsx) */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center mb-6">
           <Package size={48} className="text-blue-200 mx-auto mb-4" />
           <p className="text-gray-600 mb-6">Masukkan kode tracking yang Anda dapatkan saat checkout.</p>
@@ -125,14 +122,13 @@ export default function TrackingPage() {
           </form>
         </div>
 
-        {/* Detail Pesanan (Muncul jika ada data order) */}
         {order && (
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 animate-fade-in">
             {/* Header Detail */}
             <div className="flex justify-between items-center border-b border-gray-100 pb-4">
               <div>
                 <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Status</p>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(order.status)}`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStatusColor(order.status)}`}>
                   {getStatusLabel(order.status)}
                 </span>
               </div>
@@ -142,11 +138,40 @@ export default function TrackingPage() {
               </div>
             </div>
 
-            {/* Upload Bukti Bayar Section */}
-            {order.status === 'waiting_verification' && !order.payments?.length && (
-              <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 text-center">
-                <p className="text-sm text-blue-800 mb-4 font-medium leading-relaxed">
-                  Pesanan belum dibayar. Silakan transfer dan upload bukti pembayaran Anda.
+            {/* --- PREVIEW BUKTI PEMBAYARAN (Jika Ada) --- */}
+            {order.payments && order.payments.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <CheckCircle size={16} className="text-green-600"/>
+                  Bukti Pembayaran Terkirim
+                </p>
+                <div className="bg-white p-2 rounded-lg border border-gray-200">
+                  <img 
+                    src={order.payments[0].image} 
+                    alt="Bukti Transfer" 
+                    className="w-full h-48 object-contain rounded-md" 
+                  />
+                </div>
+                {/* Pesan status pembayaran khusus */}
+                {order.status === 'waiting_verification' && (
+                  <p className="text-xs text-yellow-700 mt-2 bg-yellow-50 p-2 rounded border border-yellow-100">
+                    Sedang diverifikasi oleh admin.
+                  </p>
+                )}
+                {order.status === 'pending_payment' && order.payments[0].status === 'invalid' && (
+                  <p className="text-xs text-red-700 mt-2 bg-red-50 p-2 rounded border border-red-100 flex items-center gap-1">
+                    <AlertCircle size={14}/> Bukti sebelumnya ditolak/invalid. Silakan upload ulang.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* --- LOGIC UPLOAD BUKTI --- */}
+            {/* Tampilkan upload jika status 'pending_payment' (awal atau setelah ditolak) */}
+            {(order.status === 'pending_payment' || (order.status === 'waiting_verification' && (!order.payments || order.payments.length === 0))) && (
+              <div className="bg-orange-50 p-5 rounded-xl border border-orange-100 text-center animate-fade-in">
+                <p className="text-sm text-orange-800 mb-4 font-medium leading-relaxed">
+                  Pesanan dibuat. Silakan transfer dan upload bukti pembayaran untuk diproses.
                 </p>
                 <label className="cursor-pointer inline-flex items-center gap-2 bg-[#1e3a8a] text-white px-5 py-2.5 rounded-xl hover:bg-blue-900 transition-all shadow-md active:scale-95">
                   {uploading ? (
@@ -159,14 +184,6 @@ export default function TrackingPage() {
                   )}
                   <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading}/>
                 </label>
-              </div>
-            )}
-            
-            {/* Notifikasi jika sudah bayar */}
-            {order.payments?.length > 0 && (
-              <div className="bg-green-50 p-4 rounded-xl border border-green-100 flex items-center gap-3 text-green-700">
-                <CheckCircle size={20} className="fill-green-600 text-white shrink-0"/> 
-                <span className="text-sm font-medium">Bukti pembayaran telah diterima dan sedang diverifikasi.</span>
               </div>
             )}
 
@@ -194,16 +211,24 @@ export default function TrackingPage() {
               </div>
             </div>
 
-            {/* Informasi Pengiriman */}
+            {/* Info Pengiriman */}
             <div className="pt-4 border-t border-gray-100">
               <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wider">Info Pengiriman</h3>
               <div className="text-sm text-gray-600 space-y-1">
-                <p><span className="font-medium text-gray-900">Penerima:</span> {order.customer_name}</p>
-                <p><span className="font-medium text-gray-900">Telepon:</span> {order.customer_phone}</p>
+                <p><span className="font-medium text-gray-900">Penerima:</span> {order.guest_name}</p>
+                <p><span className="font-medium text-gray-900">Telepon:</span> {order.phone}</p>
+                <p><span className="font-medium text-gray-900">Email:</span> {order.email || '-'}</p>
                 {order.delivery_type === 'delivery' ? (
-                  <p><span className="font-medium text-gray-900">Alamat:</span> {order.customer_address}</p>
+                  <p><span className="font-medium text-gray-900">Alamat:</span> {order.address}</p>
                 ) : (
-                  <p><span className="font-medium text-gray-900">Metode:</span> Ambil di Toko (Pickup)</p>
+                  <div>
+                    <p><span className="font-medium text-gray-900">Metode:</span> Ambil di Toko (Pickup)</p>
+                    {order.outlets && (
+                      <p className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-200">
+                        Lokasi: {order.outlets.name} ({order.outlets.address})
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
