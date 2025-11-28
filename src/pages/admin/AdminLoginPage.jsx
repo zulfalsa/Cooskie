@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Button from '../../components/common/Button'; // Sesuaikan path
-import { useAuth } from '../../context/AuthContext'; // Asumsi kamu punya AuthContext
+import Button from '../../components/common/Button';
+import { useAuth } from '../../context/AuthContext'; // Pastikan path ini benar
+import { supabase } from '../../config/supabaseClient'; // Tambahkan import supabase untuk cek role manual
 
 import iconImage from '../../assets/icon.png'; 
 
-// Component Input sederhana agar styling konsisten dengan Cooskie.jsx
 const Input = (props) => (
   <div className="mb-4">
     <input 
@@ -17,21 +17,41 @@ const Input = (props) => (
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // Fungsi login dari context
+  const { signIn } = useAuth(); // Gunakan 'signIn', bukan 'login'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !password) return alert("Mohon isi email dan password");
+
     setLoading(true);
-    // Simulasi login sederhana (Ganti dengan logic auth backend sebenarnya)
-    if (email === 'admin@cooskie.com' && password === 'admin123') {
-      login({ role: 'admin', email }); 
-      navigate('/admin/dashboard');
-    } else {
-      alert('Email atau password salah!');
+    try {
+      // 1. Login ke Supabase Auth
+      const { user } = await signIn(email, password);
+
+      if (user) {
+        // 2. Cek Role Admin secara manual untuk keamanan ganda sebelum redirect
+        const { data: profile } = await supabase
+          .from('admin_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && profile.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          alert('Akses Ditolak: Akun ini bukan akun Admin.');
+          // Opsional: Logout paksa jika bukan admin
+          await supabase.auth.signOut(); 
+        }
+      }
+    } catch (error) {
+      // Pesan error dari Supabase (misal: Invalid login credentials)
+      alert('Login Gagal: ' + (error.message || 'Email atau password salah'));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
