@@ -1,28 +1,28 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { CartProvider } from './context/CartContext';
-import { AuthProvider } from './context/AuthContext';
-import DesktopNavbar from './components/layout/DesktopNavbar';
-import Footer from './components/layout/Footer';
-import MobileNavbar from './components/layout/MobileNavbar';
-import AdminLayout from './components/layout/AdminLayout'; // Import AdminLayout
+import { CartProvider } from "../../context/CartContext";
+import { AuthProvider } from "../../context/AuthContext";
+import DesktopNavbar from './DesktopNavbar';
+import Footer from './Footer';
+import MobileNavbar from './MobileNavbar';
+import AdminLayout from './AdminLayout'; // Import AdminLayout
 
 // Client Pages
-import HomePage from './pages/client/HomePage';
-import CatalogPage from './pages/client/CatalogPage';
-import CheckoutPage from './pages/client/CheckoutPage';
-import TrackingPage from './pages/client/TrackingPage';
-import AboutPage from './pages/client/AboutPage';
-import OutletsPage from './pages/client/OutletsPage';
-import FavoritesPage from './pages/client/FavoritesPage';
-import CartPage from './pages/client/CartPage';
+import HomePage from '../../pages/client/HomePage';
+import CatalogPage from '../../pages/client/CatalogPage';
+import CheckoutPage from '../../pages/client/CheckoutPage';
+import TrackingPage from '../../pages/client/TrackingPage';
+import AboutPage from '../../pages/client/AboutPage';
+import OutletsPage from '../../pages/client/OutletsPage';
+import FavoritesPage from '../../pages/client/FavoritesPage';
+import CartPage from '../../pages/client/CartPage';
 
 // Admin Pages
-import AdminLoginPage from './pages/admin/AdminLoginPage';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import ProductManager from './pages/admin/ProductManager';
-import OutletManager from './pages/admin/OutletManager';
-import OrderManager from './pages/admin/OrderManager';
+import AdminLoginPage from '../../pages/admin/AdminLoginPage';
+import AdminDashboardPage from '../../pages/admin/AdminDashboardPage';
+import ProductManager from '../../pages/admin/ProductManager';
+import OutletManager from '../../pages/admin/OutletManager';
+import OrderManager from '../../pages/admin/OrderManager';
 
 // ==========================================
 // Component Layout Khusus Client

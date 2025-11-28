@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
       if (user) {
         // 2. Cek Role Admin secara manual untuk keamanan ganda sebelum redirect
         const { data: profile } = await supabase
-          .from('admin_profiles')
+          .from('users')
           .select('role')
           .eq('id', user.id)
           .single();

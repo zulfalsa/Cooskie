@@ -37,9 +37,9 @@ export const AuthProvider = ({ children }) => {
   // Fungsi untuk memeriksa apakah user adalah admin
   const checkAdminRole = async (authUser) => {
     try {
-      // Cek tabel admin_profiles sesuai schema database baru
+      // Cek tabel users sesuai schema database baru
       const { data, error } = await supabase
-        .from('admin_profiles')
+        .from('users')
         .select('role')
         .eq('id', authUser.id)
         .single();
