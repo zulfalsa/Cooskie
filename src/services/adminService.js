@@ -4,7 +4,7 @@ import { supabase } from '../config/supabaseClient';
 export const getDashboardStats = async () => {
   const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
   const { count: ordersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-  const { count: usersCount } = await supabase.from('admin_profiles').select('*', { count: 'exact', head: true }); // Asumsi ada tabel user/admin
+  const { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true }); // Asumsi ada tabel user/admin
   
   // Hitung total revenue dari order yang statusnya 'completed' atau 'shipped'
   const { data: revenueData } = await supabase

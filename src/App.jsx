@@ -5,7 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import DesktopNavbar from './components/layout/DesktopNavbar';
 import Footer from './components/layout/Footer';
 import MobileNavbar from './components/layout/MobileNavbar';
-import AdminLayout from './components/layout/AdminLayout'; // Import AdminLayout
+import AdminLayout from './components/layout/AdminLayout';
 
 // Client Pages
 import HomePage from './pages/client/HomePage';
