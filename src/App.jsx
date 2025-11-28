@@ -10,6 +10,7 @@ import AdminLayout from './components/layout/AdminLayout';
 // Client Pages
 import HomePage from './pages/client/HomePage';
 import CatalogPage from './pages/client/CatalogPage';
+import ProductDetailPage from './pages/client/ProductDetailPage'; // Import Halaman Detail
 import CheckoutPage from './pages/client/CheckoutPage';
 import TrackingPage from './pages/client/TrackingPage';
 import AboutPage from './pages/client/AboutPage';
@@ -62,6 +63,9 @@ function App() {
               {/* --- Public Routes (Client) --- */}
               <Route path="/" element={<HomePage />} />
               <Route path="/catalog" element={<CatalogPage />} />
+              {/* Route Baru untuk Detail Produk */}
+              <Route path="/product/:id" element={<ProductDetailPage />} />
+              
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/track" element={<TrackingPage />} />
