@@ -69,7 +69,7 @@ const Footer = () => {
             <h3 className="font-bold text-lg mb-4">Pelanggan</h3>
             <ul className="space-y-3 text-blue-100 text-sm">
               <li>
-                <Link to="/tracking" className="hover:text-white hover:translate-x-1 transition-all inline-block">Lacak Pesanan</Link>
+                <Link to="/track" className="hover:text-white hover:translate-x-1 transition-all inline-block">Lacak Pesanan</Link>
               </li>
               <li>
                 <Link to="/favorites" className="hover:text-white hover:translate-x-1 transition-all inline-block">Favorit Saya</Link>

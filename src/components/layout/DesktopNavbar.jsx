@@ -68,7 +68,7 @@ export default function DesktopNavbar() {
             <form onSubmit={handleSearch} className="relative group hidden lg:block">
               <input 
                 type="text" 
-                placeholder="Cari cookies..." 
+                placeholder="Cari cookies atau dessert..." 
                 className="pl-10 pr-4 py-1.5 rounded-full bg-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] w-60 transition-all focus:w-72 placeholder:text-gray-400 text-gray-700"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
