@@ -2,79 +2,71 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
 
+// https://vitejs.dev/config/
 export default defineConfig({
-  resolve: {
-    alias: {
-      react: path.resolve(process.cwd(), 'node_modules/react'),
-      'react-dom': path.resolve(process.cwd(), 'node_modules/react-dom'),
-    },
-  },
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-
-      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'icon.png'],
-
+      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'LOGORN.png'],
+      
       manifest: {
-        name: 'Cooskie App',
+        name: 'Cooskie',
         short_name: 'Cooskie',
-        description: 'Tugas Akhir Praktikum PPB',
-        theme_color: '#1e3a8a',
+        description: 'Nikmati cookies & dessert terbaik',
+        theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
+        scope: '/',
+        start_url: '/',
         orientation: 'portrait',
         icons: [
-          { src: '/icon.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon.png', sizes: '512x512', type: 'image/png' }
-        ]
+          {
+            src: 'pwa-64x64.png',
+            sizes: '64x64',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'maskable-icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
+        ],
       },
 
       workbox: {
-        // Fallback ke index.html jika URL tidak ditemukan
-        navigateFallback: '/index.html',  // Gunakan index.html untuk fallback
-        navigateFallbackDenylist: [/.*\.(png|jpg|jpeg|svg)$/],  // Blok gambar dari fallback
-
-        globPatterns: ['**/*.{js,css,svg,png,ico,html}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         cleanupOutdatedCaches: true,
-
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'html-cache',
-              networkTimeoutSeconds: 3
-            }
-          },
-          {
-            urlPattern: ({ request }) => 
-              ['script', 'style', 'worker'].includes(request.destination),
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'assets-cache',
-            }
-          },
-          {
-            urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'images-cache',
-              expiration: {
-                maxEntries: 60,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              }
-            }
-          }
-        ]
+        clientsClaim: true,
+        skipWaiting: true,
+        
+        // PENTING: Konfigurasi ini mencegah WSOD pada rute client-side (seperti /admin/...)
+        // dengan memastikan semua navigasi yang tidak ditemukan di cache/network
+        // akan diarahkan kembali ke index.html.
+        navigateFallback: '/index.html',
+        navigateFallbackDeny: [/^\/api\//], // Jangan fallback untuk request API
       },
 
       devOptions: {
-        enabled: false,  // Disable PWA di development
+        enabled: false, // Matikan di dev agar tidak membingungkan saat debugging
+        navigateFallback: 'index.html',
+        suppressWarnings: true,
+        type: 'module',
       },
     }),
   ],
