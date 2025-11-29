@@ -15,16 +15,20 @@ export default function OutletManager() {
   const [search, setSearch] = useState('');
 
   const fetchOutlets = () => getAdminOutlets().then(data => {
-    setOutlets(data);
-    setFilteredOutlets(data);
+    // Safety check: pastikan data array
+    setOutlets(data || []);
+    setFilteredOutlets(data || []);
   }).catch(console.error);
 
   useEffect(() => { fetchOutlets(); }, []);
 
+  // --- PERBAIKAN LOGIC SEARCH ---
+  // Menambahkan pengaman ( || '') agar tidak crash jika nama/alamat null
   useEffect(() => {
+    const lower = search.toLowerCase();
     setFilteredOutlets(outlets.filter(o => 
-      o.name.toLowerCase().includes(search.toLowerCase()) || 
-      o.address.toLowerCase().includes(search.toLowerCase())
+      (o.name || '').toLowerCase().includes(lower) || 
+      (o.address || '').toLowerCase().includes(lower)
     ));
   }, [search, outlets]);
 
@@ -111,12 +115,12 @@ export default function OutletManager() {
                   <td className="p-4">
                     <div className="flex gap-2 items-start max-w-xs text-gray-600 whitespace-normal">
                       <MapPin size={16} className="shrink-0 mt-0.5 text-gray-400"/> 
-                      <span className="line-clamp-2">{outlet.address}</span>
+                      <span className="line-clamp-2">{outlet.address || '-'}</span>
                     </div>
                   </td>
                   <td className="p-4 text-gray-600 space-y-1">
-                    <div className="text-xs">📞 {outlet.phone}</div>
-                    <div className="text-xs">🕒 {outlet.hours}</div>
+                    <div className="text-xs">📞 {outlet.phone || '-'}</div>
+                    <div className="text-xs">🕒 {outlet.hours || '-'}</div>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -147,11 +151,11 @@ export default function OutletManager() {
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex gap-2 items-start">
                   <MapPin size={16} className="shrink-0 mt-0.5 text-gray-400"/>
-                  <span>{outlet.address}</span>
+                  <span>{outlet.address || '-'}</span>
                 </div>
                 <div className="flex gap-4 pt-2 border-t border-gray-100 mt-2">
-                  <div className="flex items-center gap-1.5"><Phone size={14}/> {outlet.phone}</div>
-                  <div className="flex items-center gap-1.5"><Clock size={14}/> {outlet.hours}</div>
+                  <div className="flex items-center gap-1.5"><Phone size={14}/> {outlet.phone || '-'}</div>
+                  <div className="flex items-center gap-1.5"><Clock size={14}/> {outlet.hours || '-'}</div>
                 </div>
               </div>
             </div>

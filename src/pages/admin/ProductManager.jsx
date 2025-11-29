@@ -16,18 +16,19 @@ export default function ProductManager() {
   const [search, setSearch] = useState('');
 
   const fetchProducts = () => getAdminProducts().then(data => {
-    setProducts(data);
-    setFilteredProducts(data);
+    setProducts(data || []);
+    setFilteredProducts(data || []);
   }).catch(console.error);
 
   useEffect(() => { fetchProducts(); }, []);
 
-  // Search Logic
+  // --- PERBAIKAN 1: SEARCH LOGIC YANG AMAN ---
+  // Menambahkan ( ... || '') untuk mencegah error "Cannot read properties of null (reading 'toLowerCase')"
   useEffect(() => {
     const lower = search.toLowerCase();
     setFilteredProducts(products.filter(p => 
-      p.name.toLowerCase().includes(lower) || 
-      p.category.toLowerCase().includes(lower)
+      (p.name || '').toLowerCase().includes(lower) || 
+      (p.category || '').toLowerCase().includes(lower)
     ));
   }, [search, products]);
 
@@ -40,13 +41,15 @@ export default function ProductManager() {
         imageUrl = await uploadImage(file, 'products');
       }
 
-      const generatedSlug = form.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-');
+      // --- PERBAIKAN 2: SLUG GENERATION YANG AMAN ---
+      const productName = form.name || '';
+      const generatedSlug = productName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-');
 
       await upsertProduct({ 
         ...form, 
         slug: form.slug || generatedSlug, 
         image: imageUrl, 
-        price_cents: parseInt(form.price_cents),
+        price_cents: parseInt(form.price_cents || 0),
         stock: parseInt(form.stock || 0)
       });
       
@@ -76,7 +79,6 @@ export default function ProductManager() {
 
   return (
     <div>
-      {/* Header & Search */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Daftar Produk</h1>
@@ -99,7 +101,6 @@ export default function ProductManager() {
         </div>
       </div>
 
-      {/* --- DESKTOP VIEW (TABLE) --- */}
       <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap md:whitespace-normal">
@@ -146,16 +147,13 @@ export default function ProductManager() {
         </div>
       </div>
 
-      {/* --- MOBILE VIEW (CARD LIST) --- */}
       <div className="md:hidden grid grid-cols-1 gap-4">
         {filteredProducts.map(p => (
           <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex gap-4">
-            {/* Image */}
             <div className="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden border border-gray-200 shrink-0">
                {p.image ? <img src={p.image} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full flex items-center justify-center text-gray-400"><ImageIcon size={24}/></div>}
             </div>
             
-            {/* Info */}
             <div className="flex-1 min-w-0 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-1">
@@ -170,7 +168,6 @@ export default function ProductManager() {
                 </p>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex justify-end gap-2 mt-2">
                 <button 
                   onClick={() => openModal(p)} 
@@ -196,7 +193,6 @@ export default function ProductManager() {
         )}
       </div>
 
-      {/* Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col animate-fade-in">

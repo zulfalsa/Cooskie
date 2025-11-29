@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, MessageCircle, Truck, Eye, Calendar, User, Box, ExternalLink, AlertTriangle, X } from 'lucide-react';
-// Import fungsi deletePayment yang baru
 import { getAdminOrders, updateOrderStatus, verifyPayment, deletePayment } from '../../services/adminService';
 import { formatPrice, getStatusLabel } from '../../utils/helpers';
 import Button from '../../components/common/Button';
@@ -18,18 +17,18 @@ const getStatusBadge = (status) => {
 };
 
 const formatDate = (dateString) => {
+  if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit' });
 };
 
 export default function OrderManager() {
   const [orders, setOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null); // State untuk modal bukti bayar
+  const [selectedOrder, setSelectedOrder] = useState(null); 
 
-  const fetchOrders = () => getAdminOrders().then(setOrders).catch(console.error);
+  const fetchOrders = () => getAdminOrders().then(data => setOrders(data || [])).catch(console.error);
 
   useEffect(() => { fetchOrders(); }, []);
 
-  // Handler ubah status pesanan manual
   const handleStatusChange = async (id, status) => {
     if (confirm(`Ubah status pesanan menjadi ${getStatusLabel(status)}?`)) {
         await updateOrderStatus(id, status);
@@ -37,17 +36,16 @@ export default function OrderManager() {
     }
   };
 
-  // Handler validasi pembayaran (Updated Logic)
   const handlePaymentVerify = async (orderId, action) => {
     try {
         if (action === 'valid') {
-            if (confirm('Terima pembayaran? Status Order -> "Diproses", Payment -> "Valid".')) {
+            if (confirm('Terima pembayaran?')) {
                 await verifyPayment(orderId);
                 fetchOrders();
                 setSelectedOrder(null);
             }
         } else if (action === 'invalid') {
-            if (confirm('Tolak pembayaran? Data pembayaran akan DIHAPUS agar user upload ulang.')) {
+            if (confirm('Tolak pembayaran? Data akan dihapus.')) {
                 await deletePayment(orderId);
                 fetchOrders();
                 setSelectedOrder(null);
@@ -58,13 +56,18 @@ export default function OrderManager() {
     }
   };
 
+  // --- PERBAIKAN LOGIC WHATSAPP ---
+  // Mencegah crash jika phone null
   const sendWhatsApp = (order) => {
-    const message = `Halo Kak ${order.guest_name}, pesanan Cooskie Anda dengan ID *${order.tracking_code}* saat ini statusnya: *${getStatusLabel(order.status)}*. Terima kasih!`;
+    if (!order.phone) {
+        alert("Nomor telepon tidak tersedia untuk pesanan ini.");
+        return;
+    }
+    const message = `Halo Kak ${order.guest_name || 'Pelanggan'}, pesanan Cooskie Anda dengan ID *${order.tracking_code}* saat ini statusnya: *${getStatusLabel(order.status)}*. Terima kasih!`;
     const phone = order.phone.replace(/^0/, '62').replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // Helper untuk mendapatkan objek payment dengan aman
   const getPaymentData = (order) => {
     if (!order.payments) return null;
     const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments;
@@ -103,23 +106,22 @@ export default function OrderManager() {
                       <div className="text-xs text-gray-500 mt-1">{formatDate(order.created_at)}</div>
                     </td>
                     <td className="p-4 align-top">
-                      <div className="font-bold text-gray-900">{order.guest_name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{order.outlet_id ? 'Pickup: ' + order.outlets?.name : 'Delivery'}</div>
+                      <div className="font-bold text-gray-900">{order.guest_name || 'Guest'}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{order.outlet_id ? 'Pickup: ' + (order.outlets?.name || '-') : 'Delivery'}</div>
                     </td>
                     <td className="p-4 align-top">
                        <div className="text-xs text-gray-600">
                           {order.order_items?.map((i, idx) => (
-                            <div key={idx} className="whitespace-nowrap">• {i.quantity}x {i.products?.name}</div>
+                            <div key={idx} className="whitespace-nowrap">• {i.quantity}x {i.products?.name || 'Produk Dihapus'}</div>
                           ))}
                        </div>
                     </td>
-                    <td className="p-4 font-bold text-gray-800 align-top">{formatPrice(order.total_cents)}</td>
+                    <td className="p-4 font-bold text-gray-800 align-top">{formatPrice(order.total_cents || 0)}</td>
                     <td className="p-4 align-top">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center ${getStatusBadge(order.status)}`}>
                         {getStatusLabel(order.status)}
                       </span>
                     </td>
-                    {/* KOLOM STATUS PEMBAYARAN */}
                     <td className="p-4 align-top">
                       {payment ? (
                           <div className="flex flex-col items-start gap-2">
@@ -195,7 +197,7 @@ export default function OrderManager() {
                   {getStatusLabel(order.status)}
                 </span>
               </div>
-              {/* (Bagian detail item sama seperti sebelumnya...) */}
+              
               <div className="space-y-3 mb-4">
                 <div className="flex gap-3">
                   <User size={16} className="text-gray-400 mt-0.5 shrink-0"/>
@@ -206,7 +208,7 @@ export default function OrderManager() {
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                   <span className="text-sm text-gray-500">Total</span>
-                  <span className="text-lg font-bold text-[#1e3a8a]">{formatPrice(order.total_cents)}</span>
+                  <span className="text-lg font-bold text-[#1e3a8a]">{formatPrice(order.total_cents || 0)}</span>
                 </div>
               </div>
 
@@ -216,7 +218,7 @@ export default function OrderManager() {
                       onClick={() => setSelectedOrder(order)}
                       className={`flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-xl border w-full ${payment.status === 'valid' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}
                     >
-                        <Eye size={14}/> {payment.status === 'valid' ? 'Bukti (Lunas)' : 'Verifikasi'}
+                        <Eye size={14}/> {payment.status === 'valid' ? 'Lunas' : 'Verifikasi'}
                     </button>
                  ) : (
                    <div className="flex items-center justify-center text-xs font-bold text-gray-400 bg-gray-50 rounded-xl border border-gray-200">
@@ -244,12 +246,10 @@ export default function OrderManager() {
         })}
       </div>
 
-      {/* --- MODAL VALIDASI PEMBAYARAN --- */}
+      {/* --- MODAL VALIDASI --- */}
       {selectedOrder && getPaymentData(selectedOrder) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-             
-             {/* Use Helper Variable */}
              {(() => {
                 const payment = getPaymentData(selectedOrder);
                 return (
@@ -276,21 +276,17 @@ export default function OrderManager() {
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-2 text-sm text-[#1e3a8a] font-semibold hover:underline mb-6"
                       >
-                        <ExternalLink size={16}/> Buka Gambar di Tab Baru
+                        <ExternalLink size={16}/> Buka Gambar
                       </a>
                       <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
                         <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Total Tagihan</p>
                         <p className="text-2xl font-bold text-[#1e3a8a]">{formatPrice(selectedOrder.total_cents)}</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                          Status saat ini: <span className="font-bold text-gray-600 uppercase">{payment.status}</span>
-                        </p>
                       </div>
                     </div>
                     
                     <div className="p-5 border-t border-gray-100 bg-white rounded-b-2xl">
                         <div className="grid grid-cols-2 gap-3">
                             <Button 
-                              // Tombol Tolak Merah Solid
                               className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20 border-transparent" 
                               onClick={() => handlePaymentVerify(selectedOrder.id, 'invalid')}
                             >
@@ -303,9 +299,6 @@ export default function OrderManager() {
                               Terima (Valid)
                             </Button>
                         </div>
-                        <p className="text-[10px] text-gray-400 text-center mt-3">
-                          *Terima: Order Diproses. Tolak: Hapus Pembayaran.
-                        </p>
                     </div>
                   </>
                 );

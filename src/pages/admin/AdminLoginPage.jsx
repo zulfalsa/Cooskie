@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react'; // Import Icon Refresh
 import Button from '../../components/common/Button';
-import { useAuth } from '../../context/AuthContext'; // Pastikan path ini benar
-import { supabase } from '../../config/supabaseClient'; // Tambahkan import supabase untuk cek role manual
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../config/supabaseClient';
 
 import iconImage from '../../assets/icon.png'; 
 
@@ -17,7 +18,7 @@ const Input = (props) => (
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth(); // Gunakan 'signIn', bukan 'login'
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,11 +28,9 @@ export default function AdminLoginPage() {
 
     setLoading(true);
     try {
-      // 1. Login ke Supabase Auth
       const { user } = await signIn(email, password);
 
       if (user) {
-        // 2. Cek Role Admin secara manual untuk keamanan ganda sebelum redirect
         const { data: profile } = await supabase
           .from('users')
           .select('role')
@@ -42,23 +41,33 @@ export default function AdminLoginPage() {
           navigate('/admin/dashboard');
         } else {
           alert('Akses Ditolak: Akun ini bukan akun Admin.');
-          // Opsional: Logout paksa jika bukan admin
           await supabase.auth.signOut(); 
         }
       }
     } catch (error) {
-      // Pesan error dari Supabase (misal: Invalid login credentials)
       alert('Login Gagal: ' + (error.message || 'Email atau password salah'));
     } finally {
       setLoading(false);
     }
   };
 
+  // Fungsi darurat untuk membersihkan cache
+  const handleClearCache = async () => {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let registration of registrations) {
+        await registration.unregister();
+      }
+    }
+    // Hapus local storage jika perlu (opsional, hati-hati jika ada data penting)
+    // localStorage.clear(); 
+    window.location.reload(true); // Hard reload
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#1e3a8a]">
       <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
         
-        {/* Logo Icon */}
         <div className="flex justify-center">
           <Link to="/" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
             <img 
@@ -89,13 +98,23 @@ export default function AdminLoginPage() {
           {loading ? 'Memproses...' : 'Masuk'}
         </Button>
         
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/')} 
-          className="w-full text-gray-400 hover:text-gray-600"
-        >
-          Kembali ke Toko
-        </Button>
+        <div className="space-y-3">
+            <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')} 
+            className="w-full text-gray-400 hover:text-gray-600"
+            >
+            Kembali ke Toko
+            </Button>
+
+            {/* Tombol Darurat Reset Cache */}
+            <button 
+                onClick={handleClearCache}
+                className="flex items-center justify-center gap-1 w-full text-[10px] text-gray-300 hover:text-red-400 transition-colors uppercase tracking-wider font-bold"
+            >
+                <RefreshCw size={10} /> Reset Aplikasi (Clear Cache)
+            </button>
+        </div>
 
       </div>
     </div>

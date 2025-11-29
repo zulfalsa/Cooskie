@@ -8,7 +8,6 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      // Forces all libraries to use the single copy of React in your root node_modules
       react: path.resolve(process.cwd(), 'node_modules/react'),
       'react-dom': path.resolve(process.cwd(), 'node_modules/react-dom'),
     },
@@ -17,9 +16,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: false,
-      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'LOGORN.png'], // Pastikan nama file sesuai dengan yang ada di folder public
+      registerType: 'autoUpdate', // Update otomatis
+      injectRegister: 'auto',     // PENTING: Ubah dari false ke 'auto' agar skrip registrasi dimasukkan
+      
+      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'LOGORN.png'],
 
       pwaAssets: {
         disabled: false,
@@ -27,21 +27,21 @@ export default defineConfig({
       },
 
       manifest: {
-        name: 'cooskie', // Menggunakan nama dari konfigurasi pertama Anda
+        name: 'cooskie', 
         short_name: 'cooskie',
-        description: 'Tugas Akhir Praktikum PPB', // Deskripsi dari konfigurasi pertama
+        description: 'Tugas Akhir Praktikum PPB', 
         theme_color: '#ffffff',
-        // Icon akan di-generate otomatis oleh pwaAssets atau Anda bisa mendefinisikannya manual di sini jika pwaAssets disabled
       },
 
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
+        skipWaiting: true, // Paksa SW baru untuk segera aktif
       },
 
       devOptions: {
-        enabled: false, // Set ke true jika ingin testing PWA di mode development
+        enabled: false, 
         navigateFallback: 'index.html',
         suppressWarnings: true,
         type: 'module',
