@@ -55,15 +55,14 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         
-        // PENTING: Konfigurasi ini mencegah WSOD pada rute client-side (seperti /admin/...)
-        // dengan memastikan semua navigasi yang tidak ditemukan di cache/network
-        // akan diarahkan kembali ke index.html.
+        // PENTING: Konfigurasi ini mencegah WSOD pada rute client-side
         navigateFallback: '/index.html',
-        navigateFallbackDeny: [/^\/api\//], // Jangan fallback untuk request API
+        // CORRECTED PROPERTY NAME:
+        navigateFallbackDenylist: [/^\/api\//], // Jangan fallback untuk request API
       },
 
       devOptions: {
-        enabled: false, // Matikan di dev agar tidak membingungkan saat debugging
+        enabled: false,
         navigateFallback: 'index.html',
         suppressWarnings: true,
         type: 'module',
