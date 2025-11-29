@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
+import { Link, useLocation, Navigate, Outlet, useNavigate } from 'react-router-dom'; // 1. Tambah useNavigate
 import { LayoutDashboard, Package, Store, ShoppingCart, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 import logoImage from '../../assets/logo-dark.png'; 
 
 export default function AdminLayout() {
-  const { user, signOut } = useAuth(); // Menggunakan signOut sesuai context
+  const { user, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate(); // 2. Inisialisasi navigate
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Redirect jika tidak login
+  // Redirect otomatis jika state user kosong (keamanan level 1)
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -22,14 +23,22 @@ export default function AdminLayout() {
     { path: '/admin/outlets', label: 'Outlet', icon: Store },
   ];
 
+  // 3. Perbaikan fungsi Logout
   const handleLogout = async () => {
-    await signOut();
+    try {
+      await signOut();
+      // Mengarahkan ke login dan MENGGANTI (replace) history saat ini.
+      // Jadi ketika di-back, browser tidak akan menemukan halaman admin di history.
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error("Gagal logout:", error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans overflow-hidden">
       
-      {/* 1. MOBILE SIDEBAR OVERLAY (Background gelap saat sidebar terbuka) */}
+      {/* 1. MOBILE SIDEBAR OVERLAY */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity backdrop-blur-sm"
@@ -53,7 +62,6 @@ export default function AdminLayout() {
             />
           </Link>
           <span className="text-xs text-gray-400 font-serif font-normal uppercase">Admin</span>
-          {/* Tombol Close di Mobile */}
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-500 hover:text-red-500">
             <X size={24} />
           </button>
@@ -67,7 +75,7 @@ export default function AdminLayout() {
               <Link 
                 key={menu.path} 
                 to={menu.path} 
-                onClick={() => setSidebarOpen(false)} // Tutup sidebar saat link diklik (mobile)
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                   active 
                     ? 'bg-[#1e3a8a] text-white shadow-md shadow-blue-900/20' 
@@ -85,7 +93,7 @@ export default function AdminLayout() {
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
           <div className="px-4 mb-3">
             <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Login Sebagai</p>
-            <p className="text-sm font-medium text-gray-700 truncate">{user.email}</p>
+            <p className="text-sm font-medium text-gray-700 truncate">{user?.email}</p> {/* Tambah safety check user?.email */}
           </div>
           <button 
             onClick={handleLogout} 
@@ -117,7 +125,6 @@ export default function AdminLayout() {
                 />
               </Link>
            </div>
-           {/* Optional: Profile pic or additional action here */}
         </header>
 
         {/* Content Scroll Area */}

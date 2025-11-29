@@ -4,9 +4,8 @@ import { supabase } from '../config/supabaseClient';
 export const getDashboardStats = async () => {
   const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
   const { count: ordersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-  const { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true }); // Asumsi ada tabel user/admin
+  const { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true }); 
   
-  // Hitung total revenue dari order yang statusnya 'completed' atau 'shipped'
   const { data: revenueData } = await supabase
     .from('orders')
     .select('total_cents')
@@ -25,9 +24,7 @@ export const getAdminProducts = async () => {
 };
 
 export const upsertProduct = async (product) => {
-  // Hapus id jika kosong agar Supabase membuat ID baru (auto-increment/uuid)
   if (!product.id) delete product.id;
-  
   const { data, error } = await supabase.from('products').upsert(product).select().single();
   if (error) throw error;
   return data;
@@ -47,7 +44,6 @@ export const getAdminOutlets = async () => {
 
 export const upsertOutlet = async (outlet) => {
   if (!outlet.id) delete outlet.id;
-
   const { data, error } = await supabase.from('outlets').upsert(outlet).select().single();
   if (error) throw error;
   return data;
@@ -83,19 +79,37 @@ export const updateOrderStatus = async (id, status) => {
   if (error) throw error;
 };
 
-export const verifyPayment = async (orderId, status) => {
-  // Update status pembayaran di tabel payments
+// --- PAYMENT ACTIONS ---
+
+// 1. Terima Pembayaran (Valid)
+export const verifyPayment = async (orderId) => {
+  // Update status di tabel payments menjadi 'valid'
   const { error: payError } = await supabase
     .from('payments')
-    .update({ status })
+    .update({ status: 'valid' })
     .eq('order_id', orderId);
   
   if (payError) throw payError;
 
-  // Otomatis update status pesanan jika pembayaran valid
-  if (status === 'valid') {
-    await updateOrderStatus(orderId, 'processing'); // Masuk ke proses pembuatan
-  } else if (status === 'invalid') {
-    await updateOrderStatus(orderId, 'cancelled'); // Batalkan jika bukti palsu
-  }
+  // Otomatis update status pesanan menjadi 'processing'
+  await updateOrderStatus(orderId, 'processing');
+};
+
+// 2. Tolak Pembayaran (Hapus Data Payment)
+export const deletePayment = async (orderId) => {
+  // Opsional: Hapus file dari storage jika perlu (memerlukan nama file)
+  // const { data: payment } = await supabase.from('payments').select('image').eq('order_id', orderId).single();
+  // if (payment?.image) { ... logic hapus storage ... }
+
+  // Hapus record dari tabel payments
+  const { error } = await supabase
+    .from('payments')
+    .delete()
+    .eq('order_id', orderId);
+
+  if (error) throw error;
+
+  // Kembalikan status pesanan ke 'waiting_verification' (agar user bisa upload ulang)
+  // Atau biarkan tetap 'waiting_verification' (default)
+  await updateOrderStatus(orderId, 'waiting_verification');
 };
