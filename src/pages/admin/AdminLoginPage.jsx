@@ -106,14 +106,6 @@ export default function AdminLoginPage() {
             >
             Kembali ke Toko
             </Button>
-
-            {/* Tombol Darurat Reset Cache */}
-            <button 
-                onClick={handleClearCache}
-                className="flex items-center justify-center gap-1 w-full text-[10px] text-gray-300 hover:text-red-400 transition-colors uppercase tracking-wider font-bold"
-            >
-                <RefreshCw size={10} /> Reset Aplikasi (Clear Cache)
-            </button>
         </div>
 
       </div>

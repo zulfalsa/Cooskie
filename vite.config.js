@@ -30,41 +30,31 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         icons: [
-          { src: 'icon.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icon.png', sizes: '512x512', type: 'image/png' }
+          { src: '/icon.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon.png', sizes: '512x512', type: 'image/png' }
         ]
       },
 
       workbox: {
-        // ❗ HAPUS JS DAN CSS DARI PRECACHE → FIX WSOD
-        navigateFallback: 'index.html',
+        navigateFallback: undefined,
+        navigateFallbackDenylist: [/./],  // blok semua fallback karena Vercel sudah handle
+        
         globPatterns: ['**/*.{js,css,svg,png,ico,html}'],
-
         cleanupOutdatedCaches: true,
-
-        // ❗ HAPUS PAKET SERVICE WORKER LAMA & BARU AGAR TIDAK ADA RACE
-        clientsClaim: false,
-        skipWaiting: false,
 
         runtimeCaching: [
           {
-            // HTML → NetworkFirst supaya tidak pernah cache lama
             urlPattern: ({ request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
-            options: {
-              cacheName: 'html-cache',
-              networkTimeoutSeconds: 3,
-            }
+            options: { cacheName: 'html-cache' }
           },
           {
-            // JS & CSS → StaleWhileRevalidate (runtime only, NO precache)
             urlPattern: ({ request }) =>
               ['script', 'style', 'worker'].includes(request.destination),
             handler: 'StaleWhileRevalidate',
             options: { cacheName: 'assets-cache' }
           },
           {
-            // Images → CacheFirst
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {
@@ -78,7 +68,6 @@ export default defineConfig({
         ]
       },
 
-      // ❗ Hanya aktifkan SW di prod. Mode dev = NO SERVICE WORKER.
       devOptions: {
         enabled: false,
       },
