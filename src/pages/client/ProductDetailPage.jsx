@@ -4,7 +4,15 @@ import { getProductById } from '../../services/productService';
 import { useCart } from '../../context/CartContext';
 import { formatPrice } from '../../utils/helpers';
 import Button from '../../components/common/Button';
-import { Loader, ChevronLeft, Minus, Plus, Heart, Share2, Star } from 'lucide-react';
+import { Loader, ChevronLeft, Minus, Plus, Heart, Share2, Star, Check } from 'lucide-react';
+
+// Simple Toast Component lokal
+const Toast = ({ message, show }) => (
+  <div className={`fixed top-24 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full shadow-lg transition-all duration-300 z-50 flex items-center gap-2 ${show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+    <Check size={16} className="text-green-400" />
+    <span className="text-sm font-medium">{message}</span>
+  </div>
+);
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -14,6 +22,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
+  const [toast, setToast] = useState({ show: false, message: '' });
 
   // Ambil data produk berdasarkan ID
   useEffect(() => {
@@ -40,35 +49,49 @@ export default function ProductDetailPage() {
   // Cek apakah produk ini ada di favorit
   const isFavorite = product && favorites.some(f => f.id === product.id);
 
+  // Helper Toast
+  const showToast = (msg) => {
+    setToast({ show: true, message: msg });
+    setTimeout(() => setToast({ show: false, message: '' }), 3000);
+  };
+
   // Handle tambah ke keranjang
   const handleAddToCart = () => {
-    // Kita panggil addToCart sebanyak qty kali atau modifikasi CartContext untuk terima qty
-    // Asumsi addToCart hanya nambah 1, kita loop atau update CartContext.
-    // Untuk simplifikasi dan sesuai context yang ada:
     for (let i = 0; i < qty; i++) {
         addToCart(product);
     }
-    // Opsional: feedback visual atau redirect ke cart
-    if(confirm("Produk berhasil ditambahkan ke keranjang! Lihat keranjang?")) {
-        navigate('/cart');
-    }
+    showToast("Berhasil masuk keranjang!");
   };
 
   const handleShare = async () => {
+    // Karena sekarang menggunakan HashRouter, URL ini aman untuk dishare (tidak 404)
+    const shareData = {
+      title: product.name,
+      text: `Cek ${product.name} di Cooskie!`,
+      url: window.location.href,
+    };
+
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: product.name,
-          text: `Cek ${product.name} di Cooskie!`,
-          url: window.location.href,
-        });
+        await navigator.share(shareData);
       } catch (error) {
         console.log('Error sharing', error);
       }
     } else {
       // Fallback copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      alert("Link produk disalin ke clipboard!");
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        showToast("Link produk disalin!");
+      } catch (err) {
+        // Fallback untuk browser lama atau iframe yang memblokir clipboard API
+        const textArea = document.createElement("textarea");
+        textArea.value = shareData.url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast("Link produk disalin!");
+      }
     }
   };
 
@@ -83,7 +106,9 @@ export default function ProductDetailPage() {
   if (!product) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 pt-6">
+    <div className="min-h-screen bg-gray-50 pb-20 pt-6 relative">
+      <Toast message={toast.message} show={toast.show} />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Breadcrumb & Back */}
