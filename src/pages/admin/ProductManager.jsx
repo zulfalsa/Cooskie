@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X, Loader, Image as ImageIcon, Search, CheckCircle, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Loader, Image as ImageIcon, Search, CheckCircle, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAdminProducts, upsertProduct, deleteProduct } from '../../services/adminService';
 import { uploadImage } from '../../services/uploadService';
 import { formatPrice } from '../../utils/helpers';
@@ -15,6 +15,10 @@ export default function ProductManager() {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState('');
 
+  // State Paginasi
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+
   const fetchProducts = () => getAdminProducts().then(data => {
     setProducts(data || []);
     setFilteredProducts(data || []);
@@ -22,15 +26,24 @@ export default function ProductManager() {
 
   useEffect(() => { fetchProducts(); }, []);
 
-  // --- PERBAIKAN 1: SEARCH LOGIC YANG AMAN ---
-  // Menambahkan ( ... || '') untuk mencegah error "Cannot read properties of null (reading 'toLowerCase')"
+  // Update filter & Reset halaman saat search berubah
   useEffect(() => {
     const lower = search.toLowerCase();
     setFilteredProducts(products.filter(p => 
       (p.name || '').toLowerCase().includes(lower) || 
       (p.category || '').toLowerCase().includes(lower)
     ));
+    setCurrentPage(1); // Reset ke halaman 1
   }, [search, products]);
+
+  // Logic Paginasi
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,7 +54,6 @@ export default function ProductManager() {
         imageUrl = await uploadImage(file, 'products');
       }
 
-      // --- PERBAIKAN 2: SLUG GENERATION YANG AMAN ---
       const productName = form.name || '';
       const generatedSlug = productName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-');
 
@@ -115,7 +127,7 @@ export default function ProductManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map(p => (
+              {currentProducts.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors group">
                   <td className="p-4">
                     <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 shrink-0">
@@ -148,7 +160,7 @@ export default function ProductManager() {
       </div>
 
       <div className="md:hidden grid grid-cols-1 gap-4">
-        {filteredProducts.map(p => (
+        {currentProducts.map(p => (
           <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex gap-4">
             <div className="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden border border-gray-200 shrink-0">
                {p.image ? <img src={p.image} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full flex items-center justify-center text-gray-400"><ImageIcon size={24}/></div>}
@@ -185,12 +197,33 @@ export default function ProductManager() {
             </div>
           </div>
         ))}
-        {filteredProducts.length === 0 && (
+        {currentProducts.length === 0 && (
           <div className="text-center py-10 text-gray-400">
             <Package size={48} className="mx-auto mb-2 opacity-20"/>
             Tidak ada produk
           </div>
         )}
+      </div>
+
+      {/* --- PAGINATION CONTROLS --- */}
+      <div className="flex justify-center items-center gap-4 mt-6">
+        <button 
+          onClick={prevPage} 
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <span className="text-sm font-medium text-gray-600">
+          Halaman {currentPage} dari {totalPages || 1}
+        </span>
+        <button 
+          onClick={nextPage} 
+          disabled={currentPage === totalPages || totalPages === 0}
+          className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       {isModalOpen && (

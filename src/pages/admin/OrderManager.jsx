@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, MessageCircle, Truck, Eye, Calendar, User, Box, ExternalLink, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle, XCircle, MessageCircle, Truck, Eye, Calendar, User, Box, ExternalLink, AlertTriangle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAdminOrders, updateOrderStatus, verifyPayment, deletePayment } from '../../services/adminService';
 import { formatPrice, getStatusLabel } from '../../utils/helpers';
 import Button from '../../components/common/Button';
@@ -23,11 +23,24 @@ const formatDate = (dateString) => {
 
 export default function OrderManager() {
   const [orders, setOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null); 
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  
+  // State Paginasi
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
 
   const fetchOrders = () => getAdminOrders().then(data => setOrders(data || [])).catch(console.error);
 
   useEffect(() => { fetchOrders(); }, []);
+
+  // Logic Paginasi
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+
+  const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
   const handleStatusChange = async (id, status) => {
     if (confirm(`Ubah status pesanan menjadi ${getStatusLabel(status)}?`)) {
@@ -56,8 +69,6 @@ export default function OrderManager() {
     }
   };
 
-  // --- PERBAIKAN LOGIC WHATSAPP ---
-  // Mencegah crash jika phone null
   const sendWhatsApp = (order) => {
     if (!order.phone) {
         alert("Nomor telepon tidak tersedia untuk pesanan ini.");
@@ -97,7 +108,7 @@ export default function OrderManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {orders.map(order => {
+              {currentOrders.map(order => {
                 const payment = getPaymentData(order);
                 return (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
@@ -184,7 +195,7 @@ export default function OrderManager() {
 
       {/* --- MOBILE CARD VIEW --- */}
       <div className="md:hidden space-y-4">
-        {orders.map(order => {
+        {currentOrders.map(order => {
            const payment = getPaymentData(order);
            return (
             <div key={order.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
@@ -244,6 +255,27 @@ export default function OrderManager() {
             </div>
            );
         })}
+      </div>
+
+      {/* --- PAGINATION CONTROLS --- */}
+      <div className="flex justify-center items-center gap-4 mt-6">
+        <button 
+          onClick={prevPage} 
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <span className="text-sm font-medium text-gray-600">
+          Halaman {currentPage} dari {totalPages || 1}
+        </span>
+        <button 
+          onClick={nextPage} 
+          disabled={currentPage === totalPages || totalPages === 0}
+          className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       {/* --- MODAL VALIDASI --- */}

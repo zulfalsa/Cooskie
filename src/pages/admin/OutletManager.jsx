@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, MapPin, X, Loader, Image as ImageIcon, Search, Phone, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, X, Loader, Image as ImageIcon, Search, Phone, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAdminOutlets, upsertOutlet, deleteOutlet } from '../../services/adminService';
 import { uploadImage } from '../../services/uploadService';
 import Button from '../../components/common/Button';
@@ -14,23 +14,35 @@ export default function OutletManager() {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState('');
 
+  // State Paginasi
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+
   const fetchOutlets = () => getAdminOutlets().then(data => {
-    // Safety check: pastikan data array
     setOutlets(data || []);
     setFilteredOutlets(data || []);
   }).catch(console.error);
 
   useEffect(() => { fetchOutlets(); }, []);
 
-  // --- PERBAIKAN LOGIC SEARCH ---
-  // Menambahkan pengaman ( || '') agar tidak crash jika nama/alamat null
+  // Update filter & Reset halaman saat search berubah
   useEffect(() => {
     const lower = search.toLowerCase();
     setFilteredOutlets(outlets.filter(o => 
       (o.name || '').toLowerCase().includes(lower) || 
       (o.address || '').toLowerCase().includes(lower)
     ));
+    setCurrentPage(1);
   }, [search, outlets]);
+
+  // Logic Paginasi
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentOutlets = filteredOutlets.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredOutlets.length / itemsPerPage);
+
+  const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,7 +116,7 @@ export default function OutletManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredOutlets.map(outlet => (
+              {currentOutlets.map(outlet => (
                 <tr key={outlet.id} className="hover:bg-gray-50 transition-colors">
                   <td className="p-4">
                     <div className="w-16 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 shrink-0">
@@ -137,7 +149,7 @@ export default function OutletManager() {
 
       {/* --- MOBILE VIEW (CARD LIST) --- */}
       <div className="md:hidden grid grid-cols-1 gap-4">
-        {filteredOutlets.map(outlet => (
+        {currentOutlets.map(outlet => (
           <div key={outlet.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="h-32 bg-gray-100 relative">
                {outlet.image ? <img src={outlet.image} className="w-full h-full object-cover" alt=""/> : <div className="flex items-center justify-center h-full text-gray-400"><ImageIcon size={32}/></div>}
@@ -161,12 +173,33 @@ export default function OutletManager() {
             </div>
           </div>
         ))}
-        {filteredOutlets.length === 0 && (
+        {currentOutlets.length === 0 && (
           <div className="text-center py-10 text-gray-400">
             <MapPin size={48} className="mx-auto mb-2 opacity-20"/>
             Tidak ada outlet
           </div>
         )}
+      </div>
+
+      {/* --- PAGINATION CONTROLS --- */}
+      <div className="flex justify-center items-center gap-4 mt-6">
+        <button 
+          onClick={prevPage} 
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <span className="text-sm font-medium text-gray-600">
+          Halaman {currentPage} dari {totalPages || 1}
+        </span>
+        <button 
+          onClick={nextPage} 
+          disabled={currentPage === totalPages || totalPages === 0}
+          className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       {/* Modal Form */}
