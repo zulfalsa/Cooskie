@@ -37,7 +37,8 @@ export default defineConfig({
 
       workbox: {
         // ❗ HAPUS JS DAN CSS DARI PRECACHE → FIX WSOD
-        globPatterns: ['**/*.{png,svg,ico,txt}'],
+        navigateFallback: 'index.html',
+        globPatterns: ['**/*.{js,css,svg,png,ico,html}'],
 
         cleanupOutdatedCaches: true,
 
