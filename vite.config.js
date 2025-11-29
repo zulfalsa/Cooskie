@@ -4,7 +4,6 @@ import { VitePWA } from 'vite-plugin-pwa';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   resolve: {
     alias: {
@@ -36,9 +35,10 @@ export default defineConfig({
       },
 
       workbox: {
-        navigateFallback: undefined,
-        navigateFallbackDenylist: [/./],  // blok semua fallback karena Vercel sudah handle
-        
+        // Fallback ke index.html jika URL tidak ditemukan
+        navigateFallback: '/index.html',  // Gunakan index.html untuk fallback
+        navigateFallbackDenylist: [/.*\.(png|jpg|jpeg|svg)$/],  // Blok gambar dari fallback
+
         globPatterns: ['**/*.{js,css,svg,png,ico,html}'],
         cleanupOutdatedCaches: true,
 
@@ -46,13 +46,18 @@ export default defineConfig({
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
-            options: { cacheName: 'html-cache' }
+            options: {
+              cacheName: 'html-cache',
+              networkTimeoutSeconds: 3
+            }
           },
           {
-            urlPattern: ({ request }) =>
+            urlPattern: ({ request }) => 
               ['script', 'style', 'worker'].includes(request.destination),
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'assets-cache' }
+            options: {
+              cacheName: 'assets-cache',
+            }
           },
           {
             urlPattern: ({ request }) => request.destination === 'image',
@@ -61,7 +66,7 @@ export default defineConfig({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 60,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               }
             }
           }
@@ -69,7 +74,7 @@ export default defineConfig({
       },
 
       devOptions: {
-        enabled: false,
+        enabled: false,  // Disable PWA di development
       },
     }),
   ],
