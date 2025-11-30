@@ -55,14 +55,57 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         
-        // PENTING: Konfigurasi ini mencegah WSOD pada rute client-side
         navigateFallback: '/index.html',
-        // CORRECTED PROPERTY NAME:
-        navigateFallbackDenylist: [/^\/api\//], // Jangan fallback untuk request API
+        navigateFallbackDenylist: [/^\/api\//],
+
+        // --- TAMBAHKAN KODE INI ---
+        runtimeCaching: [
+          {
+            // 1. Caching untuk Data API Supabase (REST API)
+            // Pola ini mencocokkan request ke domain supabase yang mengandung '/rest/v1/'
+            urlPattern: ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/rest/v1/'),
+            
+            // Strategi: NetworkFirst
+            // Artinya: Coba ambil data terbaru dari internet dulu. 
+            // Jika OFFLINE atau gagal, baru ambil data lama dari cache.
+            handler: 'NetworkFirst', 
+            options: {
+              cacheName: 'supabase-api-cache',
+              expiration: {
+                maxEntries: 100, // Maksimal simpan 100 request
+                maxAgeSeconds: 60 * 60 * 24 * 7 // Hapus cache setelah 7 hari
+              },
+              cacheableResponse: {
+                statuses: [0, 200] // Hanya cache jika respons sukses
+              }
+            }
+          },
+          {
+            // 2. Caching untuk Gambar dari Supabase Storage
+            // Pola ini mencocokkan request gambar ke storage Supabase
+            urlPattern: ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/storage/v1/object/public/'),
+            
+            // Strategi: CacheFirst
+            // Artinya: Cek cache dulu. Jika gambar ada, tampilkan instan (hemat kuota & cepat).
+            // Jika tidak ada, baru download dari internet.
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'supabase-image-cache',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // Simpan gambar selama 30 hari
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+        // ---------------------------
       },
 
       devOptions: {
-        enabled: false,
+        enabled: true, // Ubah ke true agar PWA bisa dites di localhost (npm run dev)
         navigateFallback: 'index.html',
         suppressWarnings: true,
         type: 'module',
