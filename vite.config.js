@@ -12,7 +12,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'LOGORN.png'],
-      
+
       manifest: {
         name: 'Cooskie',
         short_name: 'Cooskie',
@@ -55,45 +55,35 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         
+        // PENTING: Jangan cache request Auth Supabase!
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /auth/, /supabase/], 
 
-        // --- TAMBAHKAN KODE INI ---
         runtimeCaching: [
           {
-            // 1. Caching untuk Data API Supabase (REST API)
-            // Pola ini mencocokkan request ke domain supabase yang mengandung '/rest/v1/'
+            // Cache data Supabase REST API
             urlPattern: ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/rest/v1/'),
-            
-            // Strategi: NetworkFirst
-            // Artinya: Coba ambil data terbaru dari internet dulu. 
-            // Jika OFFLINE atau gagal, baru ambil data lama dari cache.
-            handler: 'NetworkFirst', 
+            handler: 'NetworkFirst', // Selalu coba internet dulu agar data tidak usang
             options: {
               cacheName: 'supabase-api-cache',
               expiration: {
-                maxEntries: 100, // Maksimal simpan 100 request
-                maxAgeSeconds: 60 * 60 * 24 * 7 // Hapus cache setelah 7 hari
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 // 1 Hari saja cukup
               },
               cacheableResponse: {
-                statuses: [0, 200] // Hanya cache jika respons sukses
+                statuses: [0, 200]
               }
             }
           },
           {
-            // 2. Caching untuk Gambar dari Supabase Storage
-            // Pola ini mencocokkan request gambar ke storage Supabase
+            // Cache Gambar Supabase
             urlPattern: ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/storage/v1/object/public/'),
-            
-            // Strategi: CacheFirst
-            // Artinya: Cek cache dulu. Jika gambar ada, tampilkan instan (hemat kuota & cepat).
-            // Jika tidak ada, baru download dari internet.
             handler: 'CacheFirst',
             options: {
               cacheName: 'supabase-image-cache',
               expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // Simpan gambar selama 30 hari
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 Hari
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -101,11 +91,10 @@ export default defineConfig({
             }
           }
         ]
-        // ---------------------------
       },
 
       devOptions: {
-        enabled: true, // Ubah ke true agar PWA bisa dites di localhost (npm run dev)
+        enabled: true, // Ubah ke true untuk debug di localhost
         navigateFallback: 'index.html',
         suppressWarnings: true,
         type: 'module',

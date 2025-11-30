@@ -7,68 +7,86 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Ref untuk mencegah useEffect jalan 2x (React 18 Strict Mode)
   const hasInitialized = useRef(false);
-  const isCheckingRole = useRef(false);
 
-  // FIX: Cek Role sekali saja
-  const checkAdminRole = async (authUser) => {
-    if (!authUser || isCheckingRole.current) return;
-
-    isCheckingRole.current = true;
-
+  // Helper function: Ambil Role
+  const getUserRole = async (userId) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .select('role')
-        .eq('id', authUser.id)
+        .eq('id', userId)
         .single();
-
-      setUser({ ...authUser, role: data?.role || 'user' });
+      
+      if (error) {
+        console.warn("Gagal ambil role, set ke user default:", error.message);
+        return 'user';
+      }
+      return data?.role || 'user';
     } catch (err) {
-      console.error('role check failed:', err);
-      setUser({ ...authUser, role: 'user' });
-    } finally {
-      isCheckingRole.current = false;
+      console.error('Role check error:', err);
+      return 'user';
     }
   };
 
   useEffect(() => {
-    if (hasInitialized.current) return; // FIX: cegah double init
+    if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    const init = async () => {
+    const initAuth = async () => {
       try {
+        // 1. Cek sesi saat ini
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          await checkAdminRole(session.user);
+          const role = await getUserRole(session.user.id);
+          setUser({ ...session.user, role });
         } else {
           setUser(null);
         }
+      } catch (error) {
+        console.error("Auth Init Error:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    init();
+    initAuth();
 
+    // 2. Listener perubahan Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Abaikan TOKEN_REFRESHED → perbaiki WSOD
-        if (event === 'TOKEN_REFRESHED') return;
+        // console.log("Auth Event:", event); // Uncomment untuk debug
 
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-          if (session?.user) await checkAdminRole(session.user);
-        }
-
-        if (event === 'SIGNED_OUT') {
+          if (session?.user) {
+             // Cek apakah user di state sudah sama, kalau beda baru update role
+             // Ini mencegah fetch role berulang-ulang
+             setUser(prev => {
+                if(prev?.id === session.user.id) return prev; 
+                return session.user; // Update sementara, role menyusul
+             });
+             
+             const role = await getUserRole(session.user.id);
+             setUser({ ...session.user, role });
+             setLoading(false);
+          }
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Token baru, update session user tapi pertahankan role lama jika ada
+          if (session?.user) {
+             setUser(prev => ({ ...session.user, role: prev?.role || 'user' }));
+          }
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email, password) => {
@@ -77,24 +95,23 @@ export const AuthProvider = ({ children }) => {
       password,
     });
     if (error) throw error;
-
-    await checkAdminRole(data.user);
+    // Listener onAuthStateChange akan menangani setting user & role
     return data;
   };
 
   const signOut = async () => {
+    setLoading(true);
     await supabase.auth.signOut();
     setUser(null);
-
-    // ❗ PWA-SAFE: jangan full reload
-    // React akan rerender tanpa user = logout aman
+    setLoading(false);
   };
 
   return (
     <AuthContext.Provider value={{ user, signIn, signOut, loading }}>
       {loading ? (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1e3a8a]" />
+           {/* Spinner sederhana */}
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-800" />
         </div>
       ) : (
         children
