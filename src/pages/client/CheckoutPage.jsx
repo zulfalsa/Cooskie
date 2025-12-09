@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../../context/CartContext'; // Sesuaikan path
-import { createOrder } from '../../services/orderService'; // Sesuaikan path
-import { supabase } from '../../config/supabaseClient'; // Sesuaikan path
-import { generateTrackingCode, formatPrice } from '../../utils/helpers'; // Sesuaikan path
-import Button from '../../components/common/Button'; // Sesuaikan path
+import { useCart } from '../../context/CartContext'; 
+import { createOrder } from '../../services/orderService'; 
+import { supabase } from '../../config/supabaseClient'; 
+import { generateTrackingCode, formatPrice } from '../../utils/helpers'; 
+import Button from '../../components/common/Button'; 
 import { Store, Truck, ChevronLeft, CheckCircle } from 'lucide-react';
 
-// Komponen Input Sederhana agar styling konsisten
 const Input = ({ label, ...props }) => (
   <div className="mb-4">
     {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
@@ -19,22 +18,21 @@ const Input = ({ label, ...props }) => (
 );
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, clearCart } = useCart();
+  // Ambil addOrderToHistory dari context
+  const { cart, cartTotal, clearCart, addOrderToHistory } = useCart();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [outlets, setOutlets] = useState([]);
   
-  // State form disesuaikan
   const [form, setForm] = useState({ 
     name: '', 
     phone: '', 
-    email: '', // Tambahan field email sesuai backend
+    email: '', 
     address: '', 
     type: 'pickup', 
     outlet_id: '' 
   });
 
-  // Fetch outlets dari Supabase
   useEffect(() => {
     const fetchOutlets = async () => {
       const { data } = await supabase.from('outlets').select('*');
@@ -55,13 +53,23 @@ export default function CheckoutPage() {
       address: form.type === 'delivery' ? form.address : null,
       outlet_id: form.type === 'pickup' ? form.outlet_id : null,
       total_cents: cartTotal,
-      delivery_type: form.type // Pastikan field ini ada di tabel orders kamu
+      delivery_type: form.type 
     };
 
     try {
       const order = await createOrder(orderData, cart);
+      
+      // --- SIMPAN KE LOCAL STORAGE HISTORY ---
+      addOrderToHistory({
+        id: order.id,
+        tracking_code: order.tracking_code,
+        created_at: new Date().toISOString(), // Simpan waktu saat ini
+        total_cents: order.total_cents,
+        status: 'waiting_verification', // Status awal
+        item_count: cart.length // Informasi tambahan untuk tampilan
+      });
+
       clearCart();
-      // Redirect ke halaman tracking dengan state success agar muncul tampilan "Pesanan Diterima"
       navigate(`/tracking/${order.tracking_code}`, { state: { success: true } });
     } catch (error) {
       alert('Gagal membuat pesanan: ' + error.message);
@@ -70,7 +78,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // Redirect jika keranjang kosong
   if (cart.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-gray-50 text-center">
@@ -84,7 +91,6 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-gray-50 pb-12 pt-8">
       <div className="max-w-xl mx-auto px-4">
         
-        {/* Tombol Kembali */}
         <button 
           onClick={() => navigate('/cart')} 
           className="flex items-center gap-2 text-gray-500 hover:text-[#1e3a8a] mb-6 font-medium"
@@ -96,7 +102,6 @@ export default function CheckoutPage() {
         
         <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
           
-          {/* Pilihan Tipe Pengiriman */}
           <div className="grid grid-cols-2 gap-4">
             <div 
               onClick={() => setForm({ ...form, type: 'pickup' })} 
@@ -123,7 +128,6 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Form Informasi Kontak */}
           <div className="space-y-4">
             <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Informasi Kontak</h3>
             <Input 
@@ -148,7 +152,6 @@ export default function CheckoutPage() {
             />
           </div>
 
-          {/* Form Alamat (Jika Delivery) */}
           {form.type === 'delivery' && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Alamat Pengiriman</h3>
@@ -162,7 +165,6 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {/* Pilihan Outlet (Jika Pickup) */}
           {form.type === 'pickup' && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Pilih Outlet</h3>
@@ -186,7 +188,6 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {/* Total & Submit Button */}
           <div className="pt-6 border-t border-gray-100">
              <div className="flex justify-between text-lg font-bold mb-6 text-[#1e3a8a]">
               <span>Total Pembayaran</span>

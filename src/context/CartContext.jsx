@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
+  // --- EXISTING STATE ---
   const [cart, setCart] = useState(() => {
     if (typeof window !== 'undefined') {
       const local = localStorage.getItem('cooskie_cart');
@@ -19,6 +20,16 @@ export const CartProvider = ({ children }) => {
     return [];
   });
 
+  // --- NEW STATE: ORDER HISTORY ---
+  const [orderHistory, setOrderHistory] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const local = localStorage.getItem('cooskie_orders');
+      return local ? JSON.parse(local) : [];
+    }
+    return [];
+  });
+
+  // --- EXISTING EFFECTS ---
   useEffect(() => {
     localStorage.setItem('cooskie_cart', JSON.stringify(cart));
   }, [cart]);
@@ -27,6 +38,12 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cooskie_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
+  // --- NEW EFFECT: SAVE ORDERS ---
+  useEffect(() => {
+    localStorage.setItem('cooskie_orders', JSON.stringify(orderHistory));
+  }, [orderHistory]);
+
+  // --- EXISTING FUNCTIONS ---
   const addToCart = (product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
@@ -55,13 +72,19 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => setCart([]);
 
+  // --- NEW FUNCTION: ADD ORDER ---
+  const addOrderToHistory = (orderData) => {
+    setOrderHistory(prev => [orderData, ...prev]);
+  };
+
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
   const cartTotal = cart.reduce((acc, item) => acc + (item.price_cents * item.qty), 0);
 
   return (
     <CartContext.Provider value={{ 
       cart, addToCart, removeFromCart, updateQty, clearCart, cartCount, cartTotal,
-      favorites, toggleFavorite 
+      favorites, toggleFavorite,
+      orderHistory, addOrderToHistory // Export fungsi baru
     }}>
       {children}
     </CartContext.Provider>
